@@ -6,11 +6,20 @@
 /*   By: rojornod <rojornod@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/25 10:33:05 by rojornod          #+#    #+#             */
-/*   Updated: 2025/02/28 16:33:19 by rojornod         ###   ########.fr       */
+/*   Updated: 2025/02/28 17:54:32 by rojornod         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/minitalk.h"
+
+volatile sig_atomic_t recieved = 0;
+
+void	signal_handler(int signal)
+{
+	if (signal == SIGUSR1)
+		recieved = 1;
+}
+
 
 int	mod_atoi(const char *str)
 {
@@ -70,6 +79,7 @@ int main(int argc, char **argv)
 		ft_printf("Invalid process ID\n");
 		return (-1);
 	}
+
 	send_signal(argv[2], pid);
 	return (0);
 }
