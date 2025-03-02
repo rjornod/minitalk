@@ -3,21 +3,24 @@
 /*                                                        :::      ::::::::   */
 /*   client.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rojornod <rojornod@student.42.fr>          +#+  +:+       +#+        */
+/*   By: roberto <roberto@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/25 10:33:05 by rojornod          #+#    #+#             */
-/*   Updated: 2025/02/28 17:54:32 by rojornod         ###   ########.fr       */
+/*   Updated: 2025/03/02 17:49:11 by roberto          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/minitalk.h"
+#include <signal.h>
 
 volatile sig_atomic_t recieved = 0;
 
-void	signal_handler(int signal)
+void	signal_reciever(int signal)
 {
-	if (signal == SIGUSR1)
+	if (signal == SIGUSR1){
 		recieved = 1;
+		ft_printf("signal recieved\n");	
+	}
 }
 
 
@@ -46,6 +49,12 @@ static void	send_signal(char *message, int pid)
 	int	i;
 	int	bit;
 	int byte_index;
+	struct sigaction action;
+
+	action.sa_handler = signal_reciever;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 1;
+	sigaction(SIGUSR1, &action, NULL);
 
 	i = 0;
 	while (message[i] != '\0')
@@ -53,13 +62,15 @@ static void	send_signal(char *message, int pid)
 		bit = 0;
 		while (bit < 8)
 		{
-			
 			byte_index = message[i] >> (7-bit) & 1;
 			if (byte_index == 1)
 				kill(pid, SIGUSR1);
 			if (byte_index == 0)
 				kill(pid, SIGUSR2);
+			while (recieved == 0)
+				pause();
 			bit++;
+			recieved = 0;
 			usleep(100);
 		}
 		i++;
@@ -70,9 +81,11 @@ static void	send_signal(char *message, int pid)
 int main(int argc, char **argv)
 {
 	int pid;
+	
 
 	if (argc != 3)
 		return (ft_printf("Error, try again\n"), EXIT_FAILURE);
+	
 	pid = mod_atoi(argv[1]);
 	if (pid == -1)
 	{
