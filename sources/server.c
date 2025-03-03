@@ -3,59 +3,37 @@
 /*                                                        :::      ::::::::   */
 /*   server.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: roberto <roberto@student.42.fr>            +#+  +:+       +#+        */
+/*   By: rojornod <rojornod@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/25 11:58:40 by rojornod          #+#    #+#             */
-/*   Updated: 2025/03/02 18:02:47 by roberto          ###   ########.fr       */
+/*   Updated: 2025/03/03 12:23:16 by rojornod         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/minitalk.h"
 
-volatile sig_atomic_t data[2] = {0,0};
+volatile sig_atomic_t data[3] = {0, 0, 0};
 
-void	sigusr1_handler(int signal, siginfo_t *info, void *context)
+void	signal_handler(int signal, siginfo_t *info, void *context)
 {
 	(void)context;
 	if (signal == SIGUSR1)
-	{
 		data[0]= data[0] << 1 | 1;
-		data[1]++;
-		write(STDOUT_FILENO, "1", 1);
-		kill(info->si_pid, SIGUSR1);
-	}
-}
-
-void	sigusr2_handler(int signal, siginfo_t *info, void *context)
-{
-	(void)context;
-	if (signal == SIGUSR2)
-	{
+	else if (signal == SIGUSR2)
 		data[0]= data[0] << 1 | 0;
-		data[1]++;
-		write(STDOUT_FILENO, "0", 1);
-		kill(info->si_pid, SIGUSR1);
-	}
+	data[1]++;
+	data[2] = info->si_pid;
 }
 
 void	activate_signal_action(void)
 {
-	struct sigaction action1;
-	struct sigaction action2;
+	struct sigaction action;
 
-	memset(&action1, 0, sizeof(action1));
-	action2.sa_flags = SA_SIGINFO;
-	action1.sa_sigaction = &sigusr1_handler;
-	sigemptyset(&action1.sa_mask);
-	sigaddset(&action1.sa_mask, SIGUSR1);
-	sigaction(SIGUSR1, &action1, NULL);
-
-	memset(&action2, 0, sizeof(action2));
-	action2.sa_flags = SA_SIGINFO;
-	action2.sa_sigaction = &sigusr2_handler;
-	sigemptyset(&action2.sa_mask);
-	sigaddset(&action2.sa_mask, SIGUSR2);
-	sigaction(SIGUSR2, &action2, NULL);
+	action.sa_flags = SA_SIGINFO;
+	action.sa_sigaction = &signal_handler;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGUSR1, &action, NULL);
+	sigaction(SIGUSR2, &action, NULL);
 }
 
 int	main(void)
@@ -64,13 +42,14 @@ int	main(void)
 	activate_signal_action();
 	while (1)
 	{
+		pause();
 		if (data[1] == 8)
 		{
 			ft_printf("%c", data[0]);
 			data[0] = 0;
 			data[1] = 0;
 		}
-		pause();
+		kill(data[2], SIGUSR1);
 	}
 	return (0);
 }
