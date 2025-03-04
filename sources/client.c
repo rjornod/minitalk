@@ -6,7 +6,7 @@
 /*   By: rojornod <rojornod@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/25 10:33:05 by rojornod          #+#    #+#             */
-/*   Updated: 2025/03/03 14:09:13 by rojornod         ###   ########.fr       */
+/*   Updated: 2025/03/03 17:25:19 by rojornod         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,20 @@
 
 volatile sig_atomic_t	g_recieved = 0;
 
+/*
+	Helper function so that the client knows when the server has processed
+	the previous signal
+*/
 void	signal_reciever(int signal)
 {
 	if (signal == SIGUSR1)
 		g_recieved = 1;
 }
 
+/*
+	Modified atoi to handle the validation of the process ID
+	Unlike my libft atoi this does not skip spaces nor allows + and -
+*/
 int	mod_atoi(const char *str)
 {
 	int	i;
@@ -39,6 +47,12 @@ int	mod_atoi(const char *str)
 	return (result);
 }
 
+/*
+	This function will go character by character of a message and send each one
+	bit by bit. If the bit being sent is a 0 it will use SIGUSR2, if it's a 1
+	it will send SIGUSR1.
+	After recieving I set recieved to 0 so that the next bit can be processed.
+*/
 static void	send_signal(char *message, int pid)
 {
 	int					i;
@@ -47,7 +61,6 @@ static void	send_signal(char *message, int pid)
 
 	action.sa_handler = signal_reciever;
 	action.sa_flags = 0;
-	sigemptyset(&action.sa_mask);
 	sigaction(SIGUSR1, &action, NULL);
 	i = 0;
 	while (message[i] != '\0')
@@ -68,6 +81,10 @@ static void	send_signal(char *message, int pid)
 	}
 }
 
+/*
+	This main handles some validation for the process ID and then calls the 
+	send_signal function that will send the signals for the whole string
+*/
 int	main(int argc, char **argv)
 {
 	int	pid;
